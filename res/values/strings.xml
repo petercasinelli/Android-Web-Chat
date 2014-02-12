@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Android-Web-Chat</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="groupLabel">Group:</string>
+    <string name="passwordLabel">Password:</string>
+    <string name="messageLabel">Message:</string>
+
+</resources>
