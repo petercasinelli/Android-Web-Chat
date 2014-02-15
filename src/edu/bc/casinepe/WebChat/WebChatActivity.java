@@ -1,4 +1,4 @@
-package com.example.android_web_chat;
+package edu.bc.casinepe.WebChat;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -17,6 +17,8 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
+
+import com.example.android_web_chat.R;
 
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
