@@ -28,6 +28,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 public class WebChatActivity extends Activity {
@@ -73,20 +74,28 @@ public class WebChatActivity extends Activity {
 			key += " ";
 		return key;
 	}
-
+	
+	/*
+	 * encrypt helper method to encrypt strings with given configuration
+	 */
 	public String encrypt(String str) {
 		byte[] result = encryptDecryptHelper(str.getBytes(), Cipher.ENCRYPT_MODE);
 		String finalStr = Base64.encodeToString(result, Base64.DEFAULT);
 		return finalStr;
 	}
 	
+	/*
+	 * decrypt helper method to encrypt strings with given configuration
+	 */
 	public String decrypt(String str) {
 		byte[] cipherText = Base64.decode(str, Base64.DEFAULT);
 		byte[] result = encryptDecryptHelper(cipherText, Cipher.DECRYPT_MODE);
 		return new String(result);
 	}
 	
-	// Can be slow, should be in non-UI thread
+	/*
+	 * Helper method for encryption/decryption. Can be slow, should be in non-UI thread
+	 */
 	public byte[] encryptDecryptHelper(byte[] oldBytes, int mode) {
 		String key = passwordField.getText().toString();
 		key = fixKey(key);
@@ -110,16 +119,19 @@ public class WebChatActivity extends Activity {
 		}
 
 		// If we didn't return in the try block, something went wrong
-		Log.d(this.getClass().toString(), "Something went wrong line 121");
+		Log.d(this.getClass().toString(), "Encrypt/Decrypt helper did not return correct message.");
 		return new byte[] {0};
 	}
 	
 	/*
-	 * Connect button is pressed
+	 * Connect button is pressed; in a new thread, establish socket connection, send group name, 
+	 * and start listening to messages.
 	 */
 	public void connectToServer(View view) {
 		Log.d(this.getClass().toString(), "Connecting to server...");
-
+		
+		messageField.setText("");
+		
 	    ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
         
@@ -131,9 +143,9 @@ public class WebChatActivity extends Activity {
         	new Thread(new Runnable() { // network activity MUST occur on a separate thread
 		        public void run() {
 		        	//Get socket and streams
-		        	getSocketAndStreams();
+		        	getSocket();
 		    		//First, send the group name to the server (only one time, no new thread)
-    	    		sendMessageToServer(groupName, false);
+    	    		sendMessageToServer(groupName + "\n", false);
 		        	//start displaying messages
 		        	getEncryptedMessages();
 		        }
@@ -145,9 +157,9 @@ public class WebChatActivity extends Activity {
 	}
 	
 	/*
-	 * Get a socket and it's input/output streams
+	 * Get a socket and it's reader/writer
 	 */
-	private void getSocketAndStreams() {
+	private void getSocket() {
 		try {
     		Log.d(this.getClass().toString(), "Connecting to socket and getting streams");
 			s = new Socket(SOCKET_HOST, SOCKET_PORT);
@@ -163,6 +175,9 @@ public class WebChatActivity extends Activity {
 		
 	}
 	
+	/*
+	 * Listen for encrypted messages from the server.
+	 */
 	private void getEncryptedMessages() {
 		
 		Log.d(this.getClass().toString(), "Setting up to receive messages...");
@@ -170,8 +185,8 @@ public class WebChatActivity extends Activity {
 			String line;
 			while (true) {
 				while ((line = this.in.readLine()) != null) {
-					Log.d(this.getClass().toString(), "Received a message: " + line);
-					appendMessage(line);				
+					Log.d(this.getClass().toString(), "Received a message: " + line);					
+					appendMessage(decrypt(line));				
 				}	
 			}
 		} catch (IOException e) {
@@ -217,6 +232,7 @@ public class WebChatActivity extends Activity {
 			this.out.write(message);
 			//Immediately send
 			this.out.flush();
+			
 		} catch (Exception e) {
 			Log.d(this.getClass().toString(), "Exception: " + e);	
 		}
@@ -232,6 +248,8 @@ public class WebChatActivity extends Activity {
 		messageBox.post(new Runnable() {
 			public void run() {
 				messageBox.append(s + "\n");
+				ScrollView scrollView = (ScrollView)messageBox.getParent();
+				scrollView.fullScroll(View.FOCUS_DOWN);
 			}
 			
 		});	
