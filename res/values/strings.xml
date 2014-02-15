@@ -7,5 +7,9 @@
     <string name="groupLabel">Group:</string>
     <string name="passwordLabel">Password:</string>
     <string name="messageLabel">Message:</string>
+    <string name="unknown">Unknown message</string>
+    <string name="notConnected">No network connection</string>
+    <string name="connectLabel">Connect</string>
+    <string name="sendLabel">Send</string>
 
 </resources>
