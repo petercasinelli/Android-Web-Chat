@@ -35,8 +35,8 @@ public class WebChatActivity extends Activity {
 	private static final String SOCKET_HOST = "cslab.bc.edu";
 	private static final int SOCKET_PORT = 10000;
 	private Socket s = null;
-	private InputStream is = null;
-	private OutputStream os = null;
+	private BufferedReader in = null;
+	private BufferedWriter out = null;
 	private TextView messageBox = null;
 	private EditText groupNameField = null;
 	private EditText messageField = null;
@@ -114,6 +114,9 @@ public class WebChatActivity extends Activity {
 		return new byte[] {0};
 	}
 	
+	/*
+	 * Connect button is pressed
+	 */
 	public void connectToServer(View view) {
 		Log.d(this.getClass().toString(), "Connecting to server...");
 
@@ -130,7 +133,7 @@ public class WebChatActivity extends Activity {
 		        	//Get socket and streams
 		        	getSocketAndStreams();
 		    		//First, send the group name to the server (only one time, no new thread)
-    	    		sendMessageToServer(groupName);
+    	    		sendMessageToServer(groupName, false);
 		        	//start displaying messages
 		        	getEncryptedMessages();
 		        }
@@ -148,8 +151,8 @@ public class WebChatActivity extends Activity {
 		try {
     		Log.d(this.getClass().toString(), "Connecting to socket and getting streams");
 			s = new Socket(SOCKET_HOST, SOCKET_PORT);
-			os = s.getOutputStream();
-    		is = s.getInputStream();
+			in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+    		out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -163,12 +166,10 @@ public class WebChatActivity extends Activity {
 	private void getEncryptedMessages() {
 		
 		Log.d(this.getClass().toString(), "Setting up to receive messages...");
-		BufferedReader in = null;
 		try {
-			in = new BufferedReader(new InputStreamReader(this.is));
 			String line;
 			while (true) {
-				while ((line = in.readLine()) != null) {
+				while ((line = this.in.readLine()) != null) {
 					Log.d(this.getClass().toString(), "Received a message: " + line);
 					appendMessage(line);				
 				}	
@@ -179,7 +180,7 @@ public class WebChatActivity extends Activity {
 		} catch (Exception e) {
 			appendMessage("Unknown message received.");
 		} finally {
-			Log.d(this.getClass().toString(), "Finally statement reached line 121");
+			Log.d(this.getClass().toString(), "Finally statement for message listener");
 			if (s != null)
 				try {
 					s.close();
@@ -197,7 +198,7 @@ public class WebChatActivity extends Activity {
 		Log.d(this.getClass().toString(), "Send message button pressed. Message is: " + message);
 		new Thread(new Runnable() {
 	        public void run() {
-	        	sendMessageToServer(message);
+	        	sendMessageToServer(message, true);
 	        }
 	    }).start();	
 	}
@@ -205,15 +206,17 @@ public class WebChatActivity extends Activity {
 	/*
 	 * Send a message to a server with established socket s and output stream os
 	 */
-	private void sendMessageToServer(final String message) {
+	private void sendMessageToServer(String message, boolean sendEncrypted) {
 		Log.d(this.getClass().toString(), "Preparing to send a message: " + message);
-		BufferedWriter out = null;
 		try {
-			String encryptedMessage = encrypt(message);
-			Log.d(this.getClass().toString(), "Sending message: " + message + " encrypted as " + encryptedMessage + "to server");	
-			out = new BufferedWriter(new OutputStreamWriter(this.os));
-			out.write(encryptedMessage + "\n");
-			//out.newLine();
+			Log.d(this.getClass().toString(), "Sending message: " + message);	
+			if (sendEncrypted) {
+				message = encrypt(message);
+				Log.d(this.getClass().toString(), "Encrypting message as: " + message);	
+			}			
+			this.out.write(message);
+			//Immediately send
+			this.out.flush();
 		} catch (Exception e) {
 			Log.d(this.getClass().toString(), "Exception: " + e);	
 		}
